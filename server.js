@@ -51,7 +51,6 @@ pool.query(`
   )
 `).then(async () => {
   console.log("Table categories OK");
-  // Insère les catégories par défaut si la table est vide
   const check = await pool.query("SELECT COUNT(*) FROM categories");
   if (parseInt(check.rows[0].count) === 0) {
     await pool.query(
@@ -62,9 +61,30 @@ pool.query(`
   }
 }).catch(err => console.error("Erreur table categories:", err));
 
+pool.query(`
+  CREATE TABLE IF NOT EXISTS contenu (
+    cle TEXT PRIMARY KEY,
+    valeur TEXT NOT NULL
+  )
+`).then(async () => {
+  console.log("Table contenu OK");
+  const check = await pool.query("SELECT COUNT(*) FROM contenu");
+  if (parseInt(check.rows[0].count) === 0) {
+    await pool.query(
+      "INSERT INTO contenu (cle, valeur) VALUES ($1,$2),($3,$4),($5,$6),($7,$8)",
+      [
+        "eyebrow", "Bienvenue chez Amina",
+        "titre", "La boutique d'Amina, l'hidjabista.",
+        "description", "Amina choisit et propose elle-même chaque hidjab, bonnet et paire de chaussures, avec le prix et le lieu de retrait clairement indiqués. Ce site a été développé par son grand frère Mouhammad, étudiant en deuxième année de Télécommunications et Réseaux Informatiques. Parcourez la boutique, choisissez votre article, et commandez directement via Wave.",
+        "sous_titre_boutique", "Les catégories ci-dessous sont gérées par l'admin et peuvent évoluer à tout moment."
+      ]
+    );
+    console.log("Contenu par défaut inséré");
+  }
+}).catch(err => console.error("Erreur table contenu:", err));
+
 /* ---------- Routes API : Articles ---------- */
 
-// GET tous les articles
 app.get("/articles", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM articles ORDER BY id DESC");
@@ -74,7 +94,6 @@ app.get("/articles", async (req, res) => {
   }
 });
 
-// GET articles par catégorie
 app.get("/articles/:categorie", async (req, res) => {
   try {
     const result = await pool.query(
@@ -87,7 +106,6 @@ app.get("/articles/:categorie", async (req, res) => {
   }
 });
 
-// POST ajouter un article avec image
 app.post("/articles", upload.single("image"), async (req, res) => {
   try {
     const { categorie, nom, montant, localisation, description } = req.body;
@@ -113,7 +131,6 @@ app.post("/articles", upload.single("image"), async (req, res) => {
   }
 });
 
-// DELETE supprimer un article
 app.delete("/articles/:id", async (req, res) => {
   try {
     await pool.query("DELETE FROM articles WHERE id=$1", [req.params.id]);
@@ -125,7 +142,6 @@ app.delete("/articles/:id", async (req, res) => {
 
 /* ---------- Routes API : Catégories ---------- */
 
-// GET toutes les catégories
 app.get("/categories", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM categories ORDER BY id ASC");
@@ -135,7 +151,6 @@ app.get("/categories", async (req, res) => {
   }
 });
 
-// POST ajouter une catégorie
 app.post("/categories", async (req, res) => {
   try {
     const { slug, label } = req.body;
@@ -156,10 +171,39 @@ app.post("/categories", async (req, res) => {
   }
 });
 
-// DELETE supprimer une catégorie
 app.delete("/categories/:slug", async (req, res) => {
   try {
     await pool.query("DELETE FROM categories WHERE slug=$1", [req.params.slug]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ---------- Routes API : Contenu accueil ---------- */
+
+app.get("/contenu", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM contenu");
+    const objet = {};
+    result.rows.forEach(r => { objet[r.cle] = r.valeur; });
+    res.json(objet);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/contenu", async (req, res) => {
+  try {
+    const updates = req.body;
+    const cles = Object.keys(updates);
+    for (const cle of cles) {
+      await pool.query(
+        `INSERT INTO contenu (cle, valeur) VALUES ($1,$2)
+         ON CONFLICT (cle) DO UPDATE SET valeur = $2`,
+        [cle, updates[cle]]
+      );
+    }
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -44,6 +44,24 @@
 
   <div id="liste-categories" style="margin-top:18px"></div>
 
+  <h2 style="margin-top:46px">Modifier le texte de l'accueil</h2>
+  <div class="form-box">
+    <label for="champ-eyebrow">Petit texte au-dessus du titre</label>
+    <input type="text" id="champ-eyebrow" placeholder="Ex : Bienvenue chez Amina">
+
+    <label for="champ-titre">Titre principal</label>
+    <input type="text" id="champ-titre" placeholder="Ex : La boutique d'Amina, l'hidjabista.">
+
+    <label for="champ-description">Texte de présentation</label>
+    <textarea id="champ-description" rows="6" placeholder="Description de la boutique"></textarea>
+
+    <label for="champ-sous-titre-boutique">Sous-titre au-dessus des catégories</label>
+    <input type="text" id="champ-sous-titre-boutique" placeholder="Ex : Les catégories ci-dessous sont gérées par l'admin...">
+
+    <button class="btn" style="margin-top:16px" onclick="onMajContenu()">Enregistrer le contenu</button>
+    <div id="contenu-msg" style="margin-top:10px; font-size:.85rem;"></div>
+  </div>
+
   <h2 style="margin-top:46px">Ajouter un article</h2>
   <div class="form-box">
     <label for="categorie">Catégorie</label>
@@ -103,6 +121,7 @@ async function afficherAdmin() {
   await renderSelectCategories();
   await renderListeCategories();
   await renderListeAdmin();
+  await chargerFormulaireContenu();
 }
 
 /* ----- Catégories ----- */
@@ -150,6 +169,33 @@ async function renderSelectCategories() {
   const sel = document.getElementById("categorie");
   const cats = await getCategories();
   sel.innerHTML = cats.map(c => `<option value="${c.slug}">${c.label}</option>`).join("");
+}
+
+/* ----- Contenu de l'accueil ----- */
+async function chargerFormulaireContenu() {
+  const contenu = await getContenu();
+  document.getElementById("champ-eyebrow").value = contenu.eyebrow || "";
+  document.getElementById("champ-titre").value = contenu.titre || "";
+  document.getElementById("champ-description").value = contenu.description || "";
+  document.getElementById("champ-sous-titre-boutique").value = contenu.sous_titre_boutique || "";
+}
+
+async function onMajContenu() {
+  const updates = {
+    eyebrow: document.getElementById("champ-eyebrow").value.trim(),
+    titre: document.getElementById("champ-titre").value.trim(),
+    description: document.getElementById("champ-description").value.trim(),
+    sous_titre_boutique: document.getElementById("champ-sous-titre-boutique").value.trim()
+  };
+  const res = await majContenu(updates);
+  const msg = document.getElementById("contenu-msg");
+  if (res.ok) {
+    msg.style.color = "var(--teal)";
+    msg.textContent = "Contenu de l'accueil mis à jour.";
+  } else {
+    msg.style.color = "#a83232";
+    msg.textContent = res.message;
+  }
 }
 
 /* ----- Aperçu photo ----- */

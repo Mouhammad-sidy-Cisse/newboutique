@@ -4,7 +4,7 @@ const ADMIN_KEY = "md_boutique_admin_session";
 const ADMIN_PASS = "mouhammad2026";
 const WAVE_NUM = "773769951";
 
-/* ---------- Catégories (désormais gérées par le backend) ---------- */
+/* ---------- Catégories (gérées par le backend) ---------- */
 function slugify(texte) {
   return texte.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -49,6 +49,32 @@ async function supprimerCategorie(slug) {
     await fetch(`${API}/categories/${encodeURIComponent(slug)}`, { method: "DELETE" });
   } catch (err) {
     console.error(err);
+  }
+}
+
+/* ---------- Contenu dynamique de l'accueil ---------- */
+async function getContenu() {
+  try {
+    const res = await fetch(`${API}/contenu`);
+    if (!res.ok) throw new Error("Erreur chargement contenu");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return {};
+  }
+}
+
+async function majContenu(updates) {
+  try {
+    const res = await fetch(`${API}/contenu`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) return { ok: false, message: "Erreur serveur." };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, message: "Erreur réseau." };
   }
 }
 
