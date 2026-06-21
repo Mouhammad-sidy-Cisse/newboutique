@@ -28,7 +28,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-/* ---------- Init table ---------- */
+/* ---------- Init tables ---------- */
 pool.query(`
   CREATE TABLE IF NOT EXISTS articles (
     id SERIAL PRIMARY KEY,
@@ -40,9 +40,29 @@ pool.query(`
     description TEXT,
     created_at TIMESTAMP DEFAULT NOW()
   )
-`).then(() => console.log("Table articles OK")).catch(err => console.error("Erreur table:", err));
+`).then(() => console.log("Table articles OK")).catch(err => console.error("Erreur table articles:", err));
 
-/* ---------- Routes API ---------- */
+pool.query(`
+  CREATE TABLE IF NOT EXISTS categories (
+    id SERIAL PRIMARY KEY,
+    slug TEXT UNIQUE NOT NULL,
+    label TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )
+`).then(async () => {
+  console.log("Table categories OK");
+  // Insère les catégories par défaut si la table est vide
+  const check = await pool.query("SELECT COUNT(*) FROM categories");
+  if (parseInt(check.rows[0].count) === 0) {
+    await pool.query(
+      "INSERT INTO categories (slug, label) VALUES ($1,$2),($3,$4),($5,$6)",
+      ["hidjab", "Hidjab", "bonnet", "Bonnet", "chaussure", "Chaussure"]
+    );
+    console.log("Catégories par défaut insérées");
+  }
+}).catch(err => console.error("Erreur table categories:", err));
+
+/* ---------- Routes API : Articles ---------- */
 
 // GET tous les articles
 app.get("/articles", async (req, res) => {
@@ -97,6 +117,49 @@ app.post("/articles", upload.single("image"), async (req, res) => {
 app.delete("/articles/:id", async (req, res) => {
   try {
     await pool.query("DELETE FROM articles WHERE id=$1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ---------- Routes API : Catégories ---------- */
+
+// GET toutes les catégories
+app.get("/categories", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM categories ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST ajouter une catégorie
+app.post("/categories", async (req, res) => {
+  try {
+    const { slug, label } = req.body;
+    if (!slug || !label) {
+      return res.status(400).json({ error: "slug et label requis" });
+    }
+    const exist = await pool.query("SELECT * FROM categories WHERE slug=$1", [slug]);
+    if (exist.rows.length > 0) {
+      return res.status(409).json({ error: "Cette catégorie existe déjà." });
+    }
+    const db = await pool.query(
+      "INSERT INTO categories (slug, label) VALUES ($1,$2) RETURNING *",
+      [slug, label]
+    );
+    res.json(db.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE supprimer une catégorie
+app.delete("/categories/:slug", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM categories WHERE slug=$1", [req.params.slug]);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

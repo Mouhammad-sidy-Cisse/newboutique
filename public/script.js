@@ -4,47 +4,59 @@ const ADMIN_KEY = "md_boutique_admin_session";
 const ADMIN_PASS = "mouhammad2026";
 const WAVE_NUM = "773769951";
 
-/* ---------- Catégories (locales, gérées par l'admin) ---------- */
-const CAT_KEY = "md_boutique_categories";
-
-function getCategories() {
-  const raw = localStorage.getItem(CAT_KEY);
-  if (raw) return JSON.parse(raw);
-  const defaut = [
-    { slug: "hidjab", label: "Hidjab" },
-    { slug: "bonnet", label: "Bonnet" },
-    { slug: "chaussure", label: "Chaussure" }
-  ];
-  localStorage.setItem(CAT_KEY, JSON.stringify(defaut));
-  return defaut;
-}
-function saveCategories(list) {
-  localStorage.setItem(CAT_KEY, JSON.stringify(list));
-}
+/* ---------- Catégories (désormais gérées par le backend) ---------- */
 function slugify(texte) {
   return texte.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-+|-+$)/g, "");
 }
-function ajouterCategorie(label) {
+
+async function getCategories() {
+  try {
+    const res = await fetch(`${API}/categories`);
+    if (!res.ok) throw new Error("Erreur chargement catégories");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+async function ajouterCategorie(label) {
   const slug = slugify(label);
   if (!slug) return { ok: false, message: "Nom de catégorie invalide." };
-  const cats = getCategories();
-  if (cats.find(c => c.slug === slug)) return { ok: false, message: "Cette catégorie existe déjà." };
-  cats.push({ slug, label: label.trim() });
-  saveCategories(cats);
-  return { ok: true };
+  try {
+    const res = await fetch(`${API}/categories`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, label: label.trim() })
+    });
+    if (res.status === 409) {
+      return { ok: false, message: "Cette catégorie existe déjà." };
+    }
+    if (!res.ok) {
+      return { ok: false, message: "Erreur serveur." };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, message: "Erreur réseau." };
+  }
 }
-function supprimerCategorie(slug) {
-  saveCategories(getCategories().filter(c => c.slug !== slug));
+
+async function supprimerCategorie(slug) {
+  try {
+    await fetch(`${API}/categories/${encodeURIComponent(slug)}`, { method: "DELETE" });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 /* ---------- Menu de navigation ---------- */
-function renderNav(actif) {
+async function renderNav(actif) {
   const navEl = document.getElementById("nav");
   if (!navEl) return;
-  const cats = getCategories();
+  const cats = await getCategories();
   let html = `<a href="index.html"${actif === "accueil" ? ' class="active"' : ''}>Accueil</a>`;
   cats.forEach(c => {
     html += `<a href="categorie.html?cat=${encodeURIComponent(c.slug)}"${actif === c.slug ? ' class="active"' : ''}>${c.label}</a>`;
@@ -81,10 +93,15 @@ async function renderCategorie(categorieSlug, containerId) {
 }
 
 /* ---------- Cartes catégories sur la page d'accueil ---------- */
-function renderCategoriesAccueil(containerId) {
+async function renderCategoriesAccueil(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const cats = getCategories();
+  el.innerHTML = `<div class="empty">Chargement…</div>`;
+  const cats = await getCategories();
+  if (!cats.length) {
+    el.innerHTML = `<div class="empty">Aucune catégorie pour le moment.</div>`;
+    return;
+  }
   const couleurs = ["0F3D3E/F2E8D5", "C9602C/FBF8F2", "F2E8D5/0F3D3E", "0F3D3E/C9602C"];
   el.innerHTML = cats.map((c, i) => `
     <div class="card">

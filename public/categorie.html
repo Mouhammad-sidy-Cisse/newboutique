@@ -30,21 +30,23 @@
 
 <script src="script.js"></script>
 <script>
+(async () => {
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("cat");
-  const cats = getCategories();
+  const cats = await getCategories();
   const cat = cats.find(c => c.slug === slug);
 
   if(cat){
     document.title = "Amina Hidjabista — " + cat.label;
     document.getElementById("titre-categorie").textContent = cat.label;
-    renderNav(cat.slug);
-    renderCategorie(cat.slug, "liste");
+    await renderNav(cat.slug);
+    await renderCategorie(cat.slug, "liste");
   } else {
     document.getElementById("titre-categorie").textContent = "Catégorie introuvable";
     document.getElementById("liste").innerHTML = `<div class="empty">Cette catégorie n'existe pas ou a été supprimée. <a href="index.html">Retour à l'accueil</a>.</div>`;
-    renderNav("");
+    await renderNav("");
   }
+})();
 </script>
 </body>
 </html>

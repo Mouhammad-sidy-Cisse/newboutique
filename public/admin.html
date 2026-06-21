@@ -33,7 +33,7 @@
     <h2>Gérer les catégories</h2>
     <button class="btn ghost small" onclick="seDeconnecter()">Se déconnecter</button>
   </div>
-  <p class="lead">Ajoute une nouvelle catégorie — elle apparaîtra automatiquement dans le menu et sur l'accueil.</p>
+  <p class="lead">Ajoute une nouvelle catégorie — elle apparaîtra automatiquement dans le menu et sur l'accueil, pour tous les visiteurs.</p>
 
   <div class="form-box">
     <label for="nouvelle-categorie">Nom de la nouvelle catégorie</label>
@@ -80,21 +80,7 @@
 
 <script src="script.js"></script>
 <script>
-window.addEventListener("load", function () {
-
-  document.getElementById("image").addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    const apercu = document.getElementById("apercu");
-    if (!file) { apercu.style.display = "none"; return; }
-    const reader = new FileReader();
-    reader.onload = function (ev) {
-      apercu.src = ev.target.result;
-      apercu.style.display = "block";
-    };
-    reader.readAsDataURL(file);
-  });
-
-});
+const API = "";
 
 function tenterConnexion() {
   const pass = document.getElementById("pass").value;
@@ -112,43 +98,44 @@ function seDeconnecter() {
   document.getElementById("pass").value = "";
 }
 
-function afficherAdmin() {
+async function afficherAdmin() {
   document.getElementById("zone-login").style.display = "none";
   document.getElementById("zone-admin").style.display = "block";
-  renderNav("admin");
-  renderSelectCategories();
-  renderListeCategories();
-  renderListeAdmin();
+  await renderNav("admin");
+  await renderSelectCategories();
+  await renderListeCategories();
+  await renderListeAdmin();
 }
 
-function onAjouterCategorie() {
+/* ----- Catégories ----- */
+async function onAjouterCategorie() {
   const champ = document.getElementById("nouvelle-categorie");
-  const res = ajouterCategorie(champ.value);
+  const res = await ajouterCategorie(champ.value);
   const msg = document.getElementById("cat-msg");
   if (res.ok) {
     msg.style.color = "var(--teal)";
     msg.textContent = "Catégorie ajoutée.";
     champ.value = "";
-    renderNav("admin");
-    renderSelectCategories();
-    renderListeCategories();
+    await renderNav("admin");
+    await renderSelectCategories();
+    await renderListeCategories();
   } else {
     msg.style.color = "#a83232";
     msg.textContent = res.message;
   }
 }
 
-function onSupprimerCategorie(slug) {
-  if (!confirm("Supprimer cette catégorie ?")) return;
-  supprimerCategorie(slug);
-  renderNav("admin");
-  renderSelectCategories();
-  renderListeCategories();
+async function onSupprimerCategorie(slug) {
+  if (!confirm("Supprimer cette catégorie ? Les articles dans la base resteront mais n'apparaîtront plus dans le menu.")) return;
+  await supprimerCategorie(slug);
+  await renderNav("admin");
+  await renderSelectCategories();
+  await renderListeCategories();
 }
 
-function renderListeCategories() {
+async function renderListeCategories() {
   const el = document.getElementById("liste-categories");
-  const cats = getCategories();
+  const cats = await getCategories();
   if (cats.length === 0) {
     el.innerHTML = `<div class="empty">Aucune catégorie. Ajoute-en une ci-dessus.</div>`;
     return;
@@ -161,12 +148,26 @@ function renderListeCategories() {
   `).join("");
 }
 
-function renderSelectCategories() {
+async function renderSelectCategories() {
   const sel = document.getElementById("categorie");
-  const cats = getCategories();
+  const cats = await getCategories();
   sel.innerHTML = cats.map(c => `<option value="${c.slug}">${c.label}</option>`).join("");
 }
 
+/* ----- Aperçu photo ----- */
+document.getElementById("image").addEventListener("change", function (e) {
+  const file = e.target.files[0];
+  const apercu = document.getElementById("apercu");
+  if (!file) { apercu.style.display = "none"; return; }
+  const reader = new FileReader();
+  reader.onload = function (ev) {
+    apercu.src = ev.target.result;
+    apercu.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ----- Ajouter article (envoi multipart vers le backend) ----- */
 async function ajouterArticle() {
   const nom = document.getElementById("nom").value.trim();
   const montant = document.getElementById("montant").value.trim();
@@ -201,7 +202,7 @@ async function ajouterArticle() {
     formData.append("description", description);
     if (fichierImage) formData.append("image", fichierImage);
 
-    const res = await fetch("/articles", {
+    const res = await fetch(`${API}/articles`, {
       method: "POST",
       body: formData
     });
@@ -227,21 +228,23 @@ async function ajouterArticle() {
   }
 }
 
+/* ----- Supprimer article ----- */
 async function supprimerArticle(id) {
   if (!confirm("Supprimer cet article ?")) return;
   try {
-    await fetch(`/articles/${id}`, { method: "DELETE" });
+    await fetch(`${API}/articles/${id}`, { method: "DELETE" });
     renderListeAdmin();
   } catch (err) {
     alert("Erreur lors de la suppression.");
   }
 }
 
+/* ----- Liste admin (depuis l'API) ----- */
 async function renderListeAdmin() {
   const el = document.getElementById("liste-admin");
   el.innerHTML = `<div class="empty">Chargement…</div>`;
   try {
-    const res = await fetch("/articles");
+    const res = await fetch(`${API}/articles`);
     const liste = await res.json();
     if (liste.length === 0) {
       el.innerHTML = `<div class="empty">Aucun article ajouté pour le moment.</div>`;

@@ -41,8 +41,10 @@
 
 <script src="script.js"></script>
 <script>
-  renderNav("accueil");
-  renderCategoriesAccueil("categories-accueil");
+(async () => {
+  await renderNav("accueil");
+  await renderCategoriesAccueil("categories-accueil");
+})();
 </script>
 </body>
 </html>
