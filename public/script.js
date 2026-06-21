@@ -1,50 +1,26 @@
-/* ---------- Config API ---------- */
-const API = "";
+/* ---------- Config ---------- */
 const ADMIN_KEY = "md_boutique_admin_session";
 const ADMIN_PASS = "mouhammad2026";
 const WAVE_NUM = "773769951";
 
-/* ---------- Catégories (locales, gérées par l'admin) ---------- */
-const CAT_KEY = "md_boutique_categories";
-
-function getCategories() {
-  const raw = localStorage.getItem(CAT_KEY);
-  if (raw) return JSON.parse(raw);
-  const defaut = [
-    { slug: "hidjab", label: "Hidjab" },
-    { slug: "bonnet", label: "Bonnet" },
-    { slug: "chaussure", label: "Chaussure" }
-  ];
-  localStorage.setItem(CAT_KEY, JSON.stringify(defaut));
-  return defaut;
-}
-function saveCategories(list) {
-  localStorage.setItem(CAT_KEY, JSON.stringify(list));
-}
 function slugify(texte) {
   return texte.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-+|-+$)/g, "");
 }
-function ajouterCategorie(label) {
-  const slug = slugify(label);
-  if (!slug) return { ok: false, message: "Nom de catégorie invalide." };
-  const cats = getCategories();
-  if (cats.find(c => c.slug === slug)) return { ok: false, message: "Cette catégorie existe déjà." };
-  cats.push({ slug, label: label.trim() });
-  saveCategories(cats);
-  return { ok: true };
-}
-function supprimerCategorie(slug) {
-  saveCategories(getCategories().filter(c => c.slug !== slug));
+
+/* ---------- Catégories depuis l'API ---------- */
+async function getCategories() {
+  const res = await fetch("/categories");
+  return await res.json();
 }
 
 /* ---------- Menu de navigation ---------- */
-function renderNav(actif) {
+async function renderNav(actif) {
   const navEl = document.getElementById("nav");
   if (!navEl) return;
-  const cats = getCategories();
+  const cats = await getCategories();
   let html = `<a href="index.html"${actif === "accueil" ? ' class="active"' : ''}>Accueil</a>`;
   cats.forEach(c => {
     html += `<a href="categorie.html?cat=${encodeURIComponent(c.slug)}"${actif === c.slug ? ' class="active"' : ''}>${c.label}</a>`;
@@ -53,15 +29,15 @@ function renderNav(actif) {
   navEl.innerHTML = html;
 }
 
-/* ---------- Affichage public par catégorie (depuis l'API) ---------- */
+/* ---------- Affichage public par catégorie ---------- */
 async function renderCategorie(categorieSlug, containerId) {
   const el = document.getElementById(containerId);
   el.innerHTML = `<div class="empty">Chargement…</div>`;
   try {
-    const res = await fetch(`${API}/articles/${encodeURIComponent(categorieSlug)}`);
+    const res = await fetch(`/articles/${encodeURIComponent(categorieSlug)}`);
     const items = await res.json();
     if (!items.length) {
-      el.innerHTML = `<div class="empty">Aucun article pour le moment dans cette catégorie. Revenez bientôt.</div>`;
+      el.innerHTML = `<div class="empty">Aucun article pour le moment. Revenez bientôt.</div>`;
       return;
     }
     el.innerHTML = items.map(p => `
@@ -71,31 +47,36 @@ async function renderCategorie(categorieSlug, containerId) {
           <h3>${p.nom}</h3>
           <div class="meta">${p.description ? p.description + '<br>' : ''}<b>Lieu :</b> ${p.localisation}</div>
           <div class="price">${p.montant} FCFA</div>
-          <a class="btn small" href="wave.html?article=${encodeURIComponent(p.nom)}&montant=${encodeURIComponent(p.montant)}" target="_blank" rel="noopener">Commander via Wave</a>
+          <a class="btn small" href="wave.html?article=${encodeURIComponent(p.nom)}&montant=${encodeURIComponent(p.montant)}">Commander via Wave</a>
         </div>
       </div>
     `).join("");
   } catch (err) {
-    el.innerHTML = `<div class="empty">Erreur de chargement. Vérifiez votre connexion.</div>`;
+    el.innerHTML = `<div class="empty">Erreur de chargement.</div>`;
   }
 }
 
-/* ---------- Cartes catégories sur la page d'accueil ---------- */
-function renderCategoriesAccueil(containerId) {
+/* ---------- Cartes catégories sur l'accueil ---------- */
+async function renderCategoriesAccueil(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const cats = getCategories();
-  const couleurs = ["0F3D3E/F2E8D5", "C9602C/FBF8F2", "F2E8D5/0F3D3E", "0F3D3E/C9602C"];
-  el.innerHTML = cats.map((c, i) => `
-    <div class="card">
-      <img src="https://placehold.co/400x300/${couleurs[i % couleurs.length]}?text=${encodeURIComponent(c.label)}" alt="${c.label}">
-      <div class="body">
-        <h3>${c.label}</h3>
-        <div class="meta">Voir les modèles disponibles, prix et lieu de retrait.</div>
-        <a class="btn small" href="categorie.html?cat=${encodeURIComponent(c.slug)}">Voir « ${c.label} »</a>
+  el.innerHTML = `<div class="empty">Chargement…</div>`;
+  try {
+    const cats = await getCategories();
+    const couleurs = ["0F3D3E/F2E8D5", "C9602C/FBF8F2", "F2E8D5/0F3D3E", "0F3D3E/C9602C"];
+    el.innerHTML = cats.map((c, i) => `
+      <div class="card">
+        <img src="https://placehold.co/400x300/${couleurs[i % couleurs.length]}?text=${encodeURIComponent(c.label)}" alt="${c.label}">
+        <div class="body">
+          <h3>${c.label}</h3>
+          <div class="meta">Voir les modèles disponibles, prix et lieu de retrait.</div>
+          <a class="btn small" href="categorie.html?cat=${encodeURIComponent(c.slug)}">Voir « ${c.label} »</a>
+        </div>
       </div>
-    </div>
-  `).join("");
+    `).join("");
+  } catch (err) {
+    el.innerHTML = `<div class="empty">Erreur de chargement.</div>`;
+  }
 }
 
 /* ---------- Menu mobile ---------- */

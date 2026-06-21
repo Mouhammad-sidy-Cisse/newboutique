@@ -28,23 +28,76 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-/* ---------- Init table ---------- */
-pool.query(`
-  CREATE TABLE IF NOT EXISTS articles (
-    id SERIAL PRIMARY KEY,
-    categorie TEXT NOT NULL,
-    nom TEXT NOT NULL,
-    montant NUMERIC NOT NULL,
-    localisation TEXT NOT NULL,
-    image_url TEXT,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-  )
-`).then(() => console.log("Table articles OK")).catch(err => console.error("Erreur table:", err));
+/* ---------- Init tables ---------- */
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS articles (
+      id SERIAL PRIMARY KEY,
+      categorie TEXT NOT NULL,
+      nom TEXT NOT NULL,
+      montant NUMERIC NOT NULL,
+      localisation TEXT NOT NULL,
+      image_url TEXT,
+      description TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id SERIAL PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      label TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  const count = await pool.query("SELECT COUNT(*) FROM categories");
+  if (parseInt(count.rows[0].count) === 0) {
+    await pool.query(`
+      INSERT INTO categories (slug, label) VALUES
+      ('hidjab', 'Hidjab'),
+      ('bonnet', 'Bonnet'),
+      ('chaussure', 'Chaussure')
+    `);
+  }
+  console.log("Tables OK");
+}
+initDB().catch(err => console.error("Erreur DB:", err));
 
-/* ---------- Routes API ---------- */
+/* ---------- Routes catégories ---------- */
 
-// GET tous les articles
+app.get("/categories", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM categories ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/categories", async (req, res) => {
+  try {
+    const { slug, label } = req.body;
+    const result = await pool.query(
+      "INSERT INTO categories (slug, label) VALUES ($1, $2) RETURNING *",
+      [slug, label]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete("/categories/:slug", async (req, res) => {
+  try {
+    await pool.query("DELETE FROM categories WHERE slug=$1", [req.params.slug]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ---------- Routes articles ---------- */
+
 app.get("/articles", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM articles ORDER BY id DESC");
@@ -54,7 +107,6 @@ app.get("/articles", async (req, res) => {
   }
 });
 
-// GET articles par catégorie
 app.get("/articles/:categorie", async (req, res) => {
   try {
     const result = await pool.query(
@@ -67,7 +119,6 @@ app.get("/articles/:categorie", async (req, res) => {
   }
 });
 
-// POST ajouter un article avec image
 app.post("/articles", upload.single("image"), async (req, res) => {
   try {
     const { categorie, nom, montant, localisation, description } = req.body;
@@ -93,7 +144,6 @@ app.post("/articles", upload.single("image"), async (req, res) => {
   }
 });
 
-// DELETE supprimer un article
 app.delete("/articles/:id", async (req, res) => {
   try {
     await pool.query("DELETE FROM articles WHERE id=$1", [req.params.id]);
@@ -103,7 +153,7 @@ app.delete("/articles/:id", async (req, res) => {
   }
 });
 
-/* ---------- Fallback SPA ---------- */
+/* ---------- Fallback ---------- */
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
