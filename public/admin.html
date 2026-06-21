@@ -1,87 +1,5 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Amina Hidjabista — Admin</title>
-<meta name="theme-color" content="#0F3D3E">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<header>
-  <div class="brand">Amina <span>Hidjabista</span></div>
-  <button class="burger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
-  <nav id="nav"></nav>
-</header>
-
-<div class="stitch"></div>
-
-<section class="section" id="zone-login">
-  <h2>Connexion admin</h2>
-  <p class="lead">Entrez le mot de passe pour gérer les articles.</p>
-  <div class="form-box">
-    <label for="pass">Mot de passe</label>
-    <input type="password" id="pass" placeholder="••••••••">
-    <button class="btn" style="margin-top:16px" onclick="tenterConnexion()">Se connecter</button>
-    <div id="erreur" style="color:#a83232; margin-top:10px; font-size:.85rem;"></div>
-  </div>
-</section>
-
-<section class="section" id="zone-admin" style="display:none">
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-    <h2>Gérer les catégories</h2>
-    <button class="btn ghost small" onclick="seDeconnecter()">Se déconnecter</button>
-  </div>
-  <p class="lead">Ajoute une nouvelle catégorie — elle apparaîtra automatiquement dans le menu et sur l'accueil.</p>
-
-  <div class="form-box">
-    <label for="nouvelle-categorie">Nom de la nouvelle catégorie</label>
-    <input type="text" id="nouvelle-categorie" placeholder="Ex : Sac à main">
-    <button class="btn" style="margin-top:16px" onclick="onAjouterCategorie()">Ajouter la catégorie</button>
-    <div id="cat-msg" style="margin-top:10px; font-size:.85rem;"></div>
-  </div>
-
-  <div id="liste-categories" style="margin-top:18px"></div>
-
-  <h2 style="margin-top:46px">Ajouter un article</h2>
-  <div class="form-box">
-    <label for="categorie">Catégorie</label>
-    <select id="categorie"></select>
-
-    <label for="nom">Nom de l'article</label>
-    <input type="text" id="nom" placeholder="Ex : Hidjab soie bleu nuit">
-
-    <label for="montant">Montant (FCFA)</label>
-    <input type="number" id="montant" placeholder="Ex : 5000">
-
-    <label for="localisation">Localisation (lieu de retrait)</label>
-    <input type="text" id="localisation" placeholder="Ex : Rufisque, Dakar">
-
-    <label for="image">Photo de l'article</label>
-    <input type="file" id="image" accept="image/*">
-    <img id="apercu" style="display:none; margin-top:10px; max-height:160px; border-radius:4px; border:1px solid var(--line);">
-
-    <label for="description">Description (optionnel)</label>
-    <textarea id="description" placeholder="Détails sur l'article"></textarea>
-
-    <button class="btn" style="margin-top:18px" onclick="ajouterArticle()" id="btn-ajouter">Ajouter l'article</button>
-    <div id="confirmation" style="margin-top:10px; font-size:.85rem;"></div>
-  </div>
-
-  <h2 style="margin-top:46px">Articles existants</h2>
-  <div id="liste-admin"></div>
-</section>
-
-<footer>
-  <div>© 2026 Amina Hidjabista · Site par Mouhammad</div>
-  <div>Paiement via <a href="wave.html">Wave</a> · 77 376 99 51</div>
-</footer>
-
 <script src="script.js"></script>
 <script>
-const API = "";
-
 function tenterConnexion() {
   const pass = document.getElementById("pass").value;
   if (connecterAdmin(pass)) {
@@ -107,7 +25,6 @@ function afficherAdmin() {
   renderListeAdmin();
 }
 
-/* ----- Catégories ----- */
 function onAjouterCategorie() {
   const champ = document.getElementById("nouvelle-categorie");
   const res = ajouterCategorie(champ.value);
@@ -126,7 +43,7 @@ function onAjouterCategorie() {
 }
 
 function onSupprimerCategorie(slug) {
-  if (!confirm("Supprimer cette catégorie ? Les articles dans la base resteront mais n'apparaîtront plus dans le menu.")) return;
+  if (!confirm("Supprimer cette catégorie ?")) return;
   supprimerCategorie(slug);
   renderNav("admin");
   renderSelectCategories();
@@ -154,7 +71,6 @@ function renderSelectCategories() {
   sel.innerHTML = cats.map(c => `<option value="${c.slug}">${c.label}</option>`).join("");
 }
 
-/* ----- Aperçu photo ----- */
 document.getElementById("image").addEventListener("change", function (e) {
   const file = e.target.files[0];
   const apercu = document.getElementById("apercu");
@@ -167,7 +83,6 @@ document.getElementById("image").addEventListener("change", function (e) {
   reader.readAsDataURL(file);
 });
 
-/* ----- Ajouter article (envoi multipart vers le backend) ----- */
 async function ajouterArticle() {
   const nom = document.getElementById("nom").value.trim();
   const montant = document.getElementById("montant").value.trim();
@@ -202,7 +117,7 @@ async function ajouterArticle() {
     formData.append("description", description);
     if (fichierImage) formData.append("image", fichierImage);
 
-    const res = await fetch(`${API}/articles`, {
+    const res = await fetch("/articles", {
       method: "POST",
       body: formData
     });
@@ -228,23 +143,21 @@ async function ajouterArticle() {
   }
 }
 
-/* ----- Supprimer article ----- */
 async function supprimerArticle(id) {
   if (!confirm("Supprimer cet article ?")) return;
   try {
-    await fetch(`${API}/articles/${id}`, { method: "DELETE" });
+    await fetch(`/articles/${id}`, { method: "DELETE" });
     renderListeAdmin();
   } catch (err) {
     alert("Erreur lors de la suppression.");
   }
 }
 
-/* ----- Liste admin (depuis l'API) ----- */
 async function renderListeAdmin() {
   const el = document.getElementById("liste-admin");
   el.innerHTML = `<div class="empty">Chargement…</div>`;
   try {
-    const res = await fetch(`${API}/articles`);
+    const res = await fetch("/articles");
     const liste = await res.json();
     if (liste.length === 0) {
       el.innerHTML = `<div class="empty">Aucun article ajouté pour le moment.</div>`;
@@ -270,5 +183,3 @@ async function renderListeAdmin() {
 
 if (isAdminConnecte()) { afficherAdmin(); } else { renderNav("admin"); }
 </script>
-</body>
-</html>
