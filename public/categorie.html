@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amina Hidjabista — Catégorie</title>
+<meta name="theme-color" content="#0F3D3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">Amina <span>Hidjabista</span></div>
+  <button class="burger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
+  <nav id="nav"></nav>
+</header>
+
+<div class="stitch"></div>
+
+<section class="section">
+  <h2 id="titre-categorie">Catégorie</h2>
+  <p class="lead">Articles ajoutés par l'admin. Chaque carte indique le prix et le lieu de retrait.</p>
+  <div class="grid" id="liste"></div>
+</section>
+
+<footer>
+  <div>© 2026 Amina Hidjabista · Site par Mouhammad</div>
+  <div>Paiement via <a href="wave.html">Wave</a> · 77 376 99 51</div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("cat");
+  const cats = getCategories();
+  const cat = cats.find(c => c.slug === slug);
+
+  if(cat){
+    document.title = "Amina Hidjabista — " + cat.label;
+    document.getElementById("titre-categorie").textContent = cat.label;
+    renderNav(cat.slug);
+    renderCategorie(cat.slug, "liste");
+  } else {
+    document.getElementById("titre-categorie").textContent = "Catégorie introuvable";
+    document.getElementById("liste").innerHTML = `<div class="empty">Cette catégorie n'existe pas ou a été supprimée. <a href="index.html">Retour à l'accueil</a>.</div>`;
+    renderNav("");
+  }
+</script>
+</body>
+</html>

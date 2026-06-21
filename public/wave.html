@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amina Hidjabista — Paiement Wave</title>
+<meta name="theme-color" content="#0F3D3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">Amina <span>Hidjabista</span></div>
+  <button class="burger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
+  <nav id="nav"></nav>
+</header>
+
+<div class="stitch"></div>
+
+<section class="section">
+  <h2>Commander cet article</h2>
+  <p class="lead" id="recap">Vous pouvez régler directement via Wave au numéro ci-dessous.</p>
+
+  <div class="form-box">
+    <div class="wave-box">
+      <div>
+        <div style="font-size:.8rem; color:#666;">Numéro Wave</div>
+        <div class="num">77 376 99 51</div>
+      </div>
+      <button class="btn small" onclick="copierNumero()">Copier le numéro</button>
+    </div>
+    <p style="margin-top:18px; font-size:.9rem; color:#555; line-height:1.6;">
+      Ouvrez l'application Wave, choisissez « Envoyer de l'argent », saisissez le numéro
+      <strong>77 376 99 51</strong>, puis indiquez le montant et le nom de l'article en commentaire.
+      Une fois le paiement effectué, contactez Mouhammad pour confirmer la commande et organiser le retrait.
+    </p>
+    <a class="btn" style="margin-top:10px" href="https://www.wave.com/" target="_blank" rel="noopener">Ouvrir Wave</a>
+  </div>
+</section>
+
+<footer>
+  <div>© 2026 Amina Hidjabista · Site par Mouhammad</div>
+  <div>Paiement via Wave · 77 376 99 51</div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+renderNav("");
+const params = new URLSearchParams(window.location.search);
+const article = params.get("article");
+const montant = params.get("montant");
+if(article){
+  document.getElementById("recap").textContent =
+    `Article : ${article}${montant ? " — " + montant + " FCFA" : ""}. Réglez via Wave au numéro ci-dessous.`;
+}
+function copierNumero(){
+  navigator.clipboard.writeText("773769951").then(()=>{
+    alert("Numéro copié : 77 376 99 51");
+  });
+}
+</script>
+</body>
+</html>

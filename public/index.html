@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amina Hidjabista — Accueil</title>
+<meta name="theme-color" content="#0F3D3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">Amina <span>Hidjabista</span></div>
+  <button class="burger" onclick="toggleMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
+  <nav id="nav"></nav>
+</header>
+
+<div class="stitch"></div>
+
+<section class="hero">
+  <div class="eyebrow">Bienvenue chez Amina</div>
+  <h1>La boutique d'Amina, l'hidjabista.</h1>
+  <p>
+    Amina choisit et propose elle-même chaque hidjab, bonnet et paire de chaussures, avec le prix
+    et le lieu de retrait clairement indiqués. Ce site a été développé par son grand frère
+    Mouhammad, étudiant en deuxième année de Télécommunications et Réseaux Informatiques.
+    Parcourez la boutique, choisissez votre article, et commandez directement via Wave.
+  </p>
+</section>
+
+<section class="section">
+  <h2>Parcourir la boutique</h2>
+  <p class="lead">Les catégories ci-dessous sont gérées par l'admin et peuvent évoluer à tout moment.</p>
+  <div class="grid" id="categories-accueil"></div>
+</section>
+
+<footer>
+  <div>© 2026 Amina Hidjabista · Site par Mouhammad</div>
+  <div>Paiement via <a href="wave.html">Wave</a> · 77 376 99 51</div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  renderNav("accueil");
+  renderCategoriesAccueil("categories-accueil");
+</script>
+</body>
+</html>
